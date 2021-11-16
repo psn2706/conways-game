@@ -1,0 +1,1 @@
+pyinstaller --onefile -F --add-data "i.png;." --add-data "left.png;." --add-data "right.png;." main.py
