@@ -680,6 +680,16 @@ def main():
             s3_info.set_color('black')
             screen_quit_1()
 
+        def update_key(e):
+            if e.type == pygame.KEYDOWN:
+                key = get_keyboard_key(e.key)
+                if key in keyboard:
+                    keyboard[key].down()
+            if e.type == pygame.KEYUP:
+                key = get_keyboard_key(e.key)
+                if key in keyboard:
+                    keyboard[key].up()
+
         pygame.display.set_caption('Convey\'s game of life')
         width, height = GetSystemMetrics(0), GetSystemMetrics(1)
         running = True
@@ -691,7 +701,7 @@ def main():
         false_drawing = False
         colors = list(CellStorage.colors.keys())
         false_cells = {}
-        keyboard = dict([(c, KeyboardKey()) for c in KeyboardKey.all_keys()])
+        keyboard = dict([(key, KeyboardKey()) for key in KeyboardKey.all_keys()])
 
         s2_left = Button(get_img('data/left.png', 1 / 6, color='black'))
         s2_left.upd_pos(0, (height - s2_left.height()) // 2)
@@ -742,15 +752,7 @@ def main():
                     if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                         running = False
 
-                    if event.type == pygame.KEYDOWN:
-                        key = get_keyboard_key(event.key)
-                        if key in keyboard:
-                            keyboard[key].down()
-
-                    if event.type == pygame.KEYUP:
-                        key = get_keyboard_key(event.key)
-                        if key in keyboard:
-                            keyboard[key].up()
+                    update_key(event)
 
                     if event.type == pygame.KEYDOWN:
                         key = get_keyboard_key(event.key)
@@ -908,30 +910,33 @@ def main():
                         if right_click_moving:
                             CellStorage.x += event.rel[0]
                             CellStorage.y += event.rel[1]
-                if running_screen == 1:
-                    if not CellStorage.point_mode:
-                        i, j = CellStorage.mouse_cell_coord()
-                        CellStorage.draw_pale(i, j)
+                if running_screen != 1:
+                    continue
+                if not CellStorage.point_mode:
+                    i, j = CellStorage.mouse_cell_coord()
+                    CellStorage.draw_pale(i, j)
 
-                    if not CellStorage.pause and time() - t >= dt:
-                        CellStorage.new_stage()
-                        t = time()
-                    for cell in false_cells.keys():
-                        CellStorage.s_draw(cell[0], cell[1], (170, 170, 170))
-                    for cell in CellStorage.values():
-                        cell.draw()
+                if not CellStorage.pause and time() - t >= dt:
+                    CellStorage.new_stage()
+                    t = time()
+                for cell in false_cells.keys():
+                    CellStorage.s_draw(cell[0], cell[1], (170, 170, 170))
+                for cell in CellStorage.values():
+                    cell.draw()
 
-                    blit_button(s2_inv)
-                    eraser.set_color("red") if CellStorage.erase_mode else eraser.set_color("black")
-                    blit_button(eraser)
-                    blit_button(s3_info)
-                    save.dis_light()
-                    blit_button(save)
-                    pygame.display.flip()
+                blit_button(s2_inv)
+                eraser.set_color("red") if CellStorage.erase_mode else eraser.set_color("black")
+                blit_button(eraser)
+                blit_button(s3_info)
+                save.dis_light()
+                blit_button(save)
+                pygame.display.flip()
             if running_screen == 2:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         running = False
+
+                    update_key(event)
 
                     if event.type == pygame.KEYDOWN:
                         key = get_keyboard_key(event.key)
@@ -998,24 +1003,26 @@ def main():
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN \
                             or event.type == pygame.MOUSEBUTTONDOWN and event.button == 5:
                         CellStorage.resize(1 / 2, s2=True)
-                if running_screen == 2:
-                    CellStorage.s_draw(0, 0, (222, 222, 222), s2=True)
-                    CellStorage.draw_figure(s2=True)
-                    screen.blit(s2_left.image, s2_left.rect)
-                    screen.blit(s2_right.image, s2_right.rect)
-                    s2_inv.set_color("red")
-                    screen.blit(s2_inv.image, s2_inv.rect)
-                    screen.blit(to_s1_text.text, to_s1_text.rect)
-                    eraser.set_color("red") if CellStorage.erase_mode else eraser.set_color("black")
-                    screen.blit(eraser.image, eraser.rect)
-                    screen.blit(s3_info.image, s3_info.rect)
-                    save.dis_light()
-                    screen.blit(save.image, save.rect)
-                    pygame.display.flip()
+                if running_screen != 2:
+                    continue
+                CellStorage.s_draw(0, 0, (222, 222, 222), s2=True)
+                CellStorage.draw_figure(s2=True)
+                screen.blit(s2_left.image, s2_left.rect)
+                screen.blit(s2_right.image, s2_right.rect)
+                s2_inv.set_color("red")
+                screen.blit(s2_inv.image, s2_inv.rect)
+                screen.blit(to_s1_text.text, to_s1_text.rect)
+                eraser.set_color("red") if CellStorage.erase_mode else eraser.set_color("black")
+                screen.blit(eraser.image, eraser.rect)
+                screen.blit(s3_info.image, s3_info.rect)
+                save.dis_light()
+                screen.blit(save.image, save.rect)
+                pygame.display.flip()
             if running_screen == 3:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         running = False
+                    update_key(event)
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_i:
                         screen_quit_3()
                         running_screen = 2
@@ -1038,17 +1045,18 @@ def main():
                             running_screen = 2
                         elif save.collide_point(x, y):
                             save.launch()
-                if running_screen == 3:
-                    screen.blit(s2_inv.image, s2_inv.rect)
-                    screen.blit(to_s1_text.text, to_s1_text.rect)
-                    eraser.set_color("red") if CellStorage.erase_mode else eraser.set_color("black")
-                    screen.blit(eraser.image, eraser.rect)
-                    s3_info.set_color("red")
-                    screen.blit(s3_info.image, s3_info.rect)
-                    blit_text(screen, s3_info_text, (20, 25), pygame.font.SysFont('Courier New', 24))
-                    save.dis_light()
-                    blit_button(save)
-                    pygame.display.flip()
+                if running_screen != 3:
+                    continue
+                screen.blit(s2_inv.image, s2_inv.rect)
+                screen.blit(to_s1_text.text, to_s1_text.rect)
+                eraser.set_color("red") if CellStorage.erase_mode else eraser.set_color("black")
+                screen.blit(eraser.image, eraser.rect)
+                s3_info.set_color("red")
+                screen.blit(s3_info.image, s3_info.rect)
+                blit_text(screen, s3_info_text, (20, 25), pygame.font.SysFont('Courier New', 24))
+                save.dis_light()
+                blit_button(save)
+                pygame.display.flip()
 
         pygame.quit()
 
