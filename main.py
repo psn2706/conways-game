@@ -62,7 +62,7 @@ def main():
             (0, -1), (0, 1),
             (1, -1), (1, 0), (1, 1)
         ]
-        __point = [(0, 0)]
+        point = [(0, 0)]
         figure = [(0, 0)]
         figure_index = 0
         figures = [
@@ -280,7 +280,7 @@ def main():
 
         @staticmethod
         def set_point():
-            CellStorage.figure = CellStorage.__point
+            CellStorage.figure = CellStorage.point
 
         @staticmethod
         def set_figure(i=None, f=None):
@@ -306,12 +306,12 @@ def main():
             fs = CellStorage.figures
             if fi == len(fs) - 1 and len(fs[fi]) > 0:
                 CellStorage.figures.append([])
-            CellStorage.figure_index = min(fi + 1, len(CellStorage.figures) - 1)
-            fi = CellStorage.figure_index
+            fi = min(fi + 1, len(CellStorage.figures) - 1)
             if not empty_allow and len(CellStorage.figures[fi]) == 0 and fi > 0:
-                CellStorage.figure_index -= 1
+                fi -= 1
             if not CellStorage.point_mode:
-                CellStorage.figure = CellStorage.figures[CellStorage.figure_index]
+                CellStorage.figure = CellStorage.figures[fi]
+            CellStorage.figure_index = fi
 
         @staticmethod
         def get_figure(i=None):
@@ -355,14 +355,14 @@ def main():
                 CellStorage.s_draw(i, j, CellStorage.colors[CellStorage.color_name], s2)
 
     class Cell:
-        def __init__(self, _i=0, _j=0, color=None):
-            if (_i, _j) not in CellStorage.dict_cell:
-                self.i, self.j = _i, _j  # нумерация столбцов и строк
+        def __init__(self, i=0, j=0, color=None):
+            if (i, j) not in CellStorage.dict_cell:
+                self.i, self.j = i, j  # нумерация столбцов и строк
                 if color is None:
                     self.color = CellStorage.colors[CellStorage.color_name]
                 else:
                     self.color = color
-                CellStorage.dict_cell[(_i, _j)] = self
+                CellStorage.dict_cell[(i, j)] = self
 
         def draw(self):
             CellStorage.s_draw(self.i, self.j, self.color)
@@ -480,6 +480,14 @@ def main():
                 self.tick = time() - self.seconds >= 0.1
             return self.tick
 
+        @staticmethod
+        def all_keys():
+            lst = []
+            lst.extend(list('0123456789qwertyuiopasdfghjklzxcvbnm'))
+            lst.extend([f'F{i}' for i in range(1, 13)])
+            lst.extend(['ctrl', 'esc', 'left', 'right', 'up', 'down'])
+            return lst
+
     def get_keyboard_key(key):
         if key == pygame.K_0:
             return '0'
@@ -553,8 +561,42 @@ def main():
             return 'y'
         if key == pygame.K_z:
             return 'z'
+        if key == pygame.K_F1:
+            return 'F1'
+        if key == pygame.K_F2:
+            return 'F2'
+        if key == pygame.K_F3:
+            return 'F3'
+        if key == pygame.K_F4:
+            return 'F4'
+        if key == pygame.K_F5:
+            return 'F5'
+        if key == pygame.K_F6:
+            return 'F6'
+        if key == pygame.K_F7:
+            return 'F7'
+        if key == pygame.K_F8:
+            return 'F8'
+        if key == pygame.K_F9:
+            return 'F9'
+        if key == pygame.K_F10:
+            return 'F10'
+        if key == pygame.K_F11:
+            return 'F11'
+        if key == pygame.K_F12:
+            return 'F12'
         if key == pygame.K_LCTRL or key == pygame.K_RCTRL:
             return 'ctrl'
+        if key == pygame.K_ESCAPE:
+            return 'esc'
+        if key == pygame.K_LEFT:
+            return 'left'
+        if key == pygame.K_RIGHT:
+            return 'right'
+        if key == pygame.K_UP:
+            return 'up'
+        if key == pygame.K_DOWN:
+            return 'down'
         return 'None'
 
     def run():
@@ -647,11 +689,9 @@ def main():
         t, dt = time(), 1 / 4
         running_screen = 1
         false_drawing = False
+        colors = list(CellStorage.colors.keys())
         false_cells = {}
-        keyboard = {}
-        for c in 'qwertyuiopasdfghjklzxcvbnm':
-            keyboard[c] = KeyboardKey()
-        keyboard['ctrl'] = KeyboardKey()
+        keyboard = dict([(c, KeyboardKey()) for c in KeyboardKey.all_keys()])
 
         s2_left = Button(get_img('data/left.png', 1 / 6, color='black'))
         s2_left.upd_pos(0, (height - s2_left.height()) // 2)
@@ -715,7 +755,6 @@ def main():
                     if event.type == pygame.KEYDOWN:
                         key = get_keyboard_key(event.key)
                         if key in list('12345'):
-                            colors = list(CellStorage.colors.keys())
                             CellStorage.set_color(colors[int(key) - 1])
                             false_drawing = False
                         elif key == '0':
@@ -723,7 +762,25 @@ def main():
                             false_drawing = True
                         elif key == 'r':
                             CellStorage.rotate()
-
+                        elif key == 'i':
+                            screen_quit_1()
+                            running_screen = 2
+                        elif key == 'esc':
+                            screen_quit_2()
+                            running_screen = 1
+                        elif key == 'F1':
+                            screen_quit_1()
+                            running_screen = 3
+                        elif key == 'e':
+                            CellStorage.erase_mode = not CellStorage.erase_mode
+                        elif key == 's' and keyboard['ctrl'].is_pressed:
+                            save.launch()
+                        elif key == 'p':
+                            CellStorage.point_mode = not CellStorage.point_mode
+                            if CellStorage.point_mode:
+                                CellStorage.set_point()
+                            else:
+                                CellStorage.set_figure()
                     if keyboard['ctrl'].is_pressed:
                         if keyboard['k'].is_pressed:
                             false_cells.clear()
@@ -734,23 +791,8 @@ def main():
                     elif keyboard['k'].is_pressed:
                         CellStorage.clear()
 
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_i:
-                        screen_quit_1()
-                        running_screen = 2
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_F1:
-                        screen_quit_1()
-                        running_screen = 3
-
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_p:
-                        CellStorage.point_mode = not CellStorage.point_mode
-                        if CellStorage.point_mode:
-                            CellStorage.set_point()
-                        if not CellStorage.point_mode:
-                            CellStorage.set_figure()
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                         CellStorage.pause = not CellStorage.pause
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
-                        CellStorage.erase_mode = not CellStorage.erase_mode
 
                     # re_time
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_LEFT:
@@ -902,25 +944,23 @@ def main():
                             false_drawing = True
                         elif key == 'r':
                             CellStorage.rotate()
-
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_i:
-                        screen_quit_2()
-                        running_screen = 1
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                        screen_quit_2()
-                        running_screen = 1
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_F1:
-                        screen_quit_2()
-                        running_screen = 3
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
-                        CellStorage.erase_mode = not CellStorage.erase_mode
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_s:
-                        save.launch()
-
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_LEFT:
-                        CellStorage.set_left_figure()
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT:
-                        CellStorage.set_right_figure()
+                        elif key == 'i':
+                            screen_quit_2()
+                            running_screen = 1
+                        elif key == 'esc':
+                            screen_quit_2()
+                            running_screen = 1
+                        elif key == 'F1':
+                            screen_quit_2()
+                            running_screen = 3
+                        elif key == 'e':
+                            CellStorage.erase_mode = not CellStorage.erase_mode
+                        elif key == 's' and keyboard['ctrl'].is_pressed:
+                            save.launch()
+                        elif key == 'left':
+                            CellStorage.set_left_figure()
+                        elif key == 'right':
+                            CellStorage.set_right_figure()
 
                     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                         x, y = event.pos[0], event.pos[1]
