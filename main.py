@@ -563,6 +563,8 @@ def main():
                 super().__init__(image)
                 self.prefix = prefix
                 self.text = text
+                self.timer = time()
+                self.light = False
 
             def make_file(self):
                 f = open(self.prefix + self.text, 'w')
@@ -611,6 +613,18 @@ def main():
                     finally:
                         f.close()
 
+            def launch(self):
+                self.timer = time()
+                self.make_file()
+                self.set_color('red')
+                self.light = True
+
+            def dis_light(self):
+                if time() - self.timer >= 0.16:
+                    self.light = False
+                if not self.light:
+                    self.set_color('black')
+
         def screen_quit_1():
             nonlocal left_click_moving_time, right_click_moving
             left_click_moving_time, right_click_moving, CellStorage.erase_mode = 0.0, False, False
@@ -624,22 +638,6 @@ def main():
             s3_info.set_color('black')
             screen_quit_1()
 
-        def launch(s):
-            if isinstance(s, SaveBox):
-                nonlocal timer, light_timer
-                timer = time()
-                s.make_file()
-                s.set_color('red')
-                light_timer = True
-
-        def dis_light(s):
-            if isinstance(s, SaveBox):
-                nonlocal timer, light_timer
-                if time() - timer >= 0.14:
-                    light_timer = False
-                if not light_timer:
-                    s.set_color('black')
-
         pygame.display.set_caption('Convey\'s game of life')
         width, height = GetSystemMetrics(0), GetSystemMetrics(1)
         running = True
@@ -647,7 +645,6 @@ def main():
         CellStorage.x, CellStorage.y = (width - CellStorage.size) // 2, (height - CellStorage.size) // 2
         CellStorage.x2, CellStorage.y2 = CellStorage.x, CellStorage.y
         t, dt = time(), 1 / 4
-        light_timer, timer = False, time()
         running_screen = 1
         false_drawing = False
         false_cells = {}
@@ -731,7 +728,7 @@ def main():
                         if keyboard['k'].is_pressed:
                             false_cells.clear()
                         if keyboard['s'].is_pressed:
-                            launch(save)
+                            save.launch()
                         if keyboard['z'].is_pressed:
                             save.upd_by_file(full=False)
                     elif keyboard['k'].is_pressed:
@@ -811,7 +808,7 @@ def main():
                             screen_quit_1()
                             running_screen = 3
                         elif save.collide_point(x, y):
-                            launch(save)
+                            save.launch()
                         elif eraser.collide_point(x, y):
                             CellStorage.erase_mode = not CellStorage.erase_mode
                         elif false_drawing:
@@ -886,7 +883,7 @@ def main():
                     eraser.set_color("red") if CellStorage.erase_mode else eraser.set_color("black")
                     blit_button(eraser)
                     blit_button(s3_info)
-                    dis_light(save)
+                    save.dis_light()
                     blit_button(save)
                     pygame.display.flip()
             if running_screen == 2:
@@ -918,7 +915,7 @@ def main():
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
                         CellStorage.erase_mode = not CellStorage.erase_mode
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_s:
-                        launch(save)
+                        save.launch()
 
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_LEFT:
                         CellStorage.set_left_figure()
@@ -972,7 +969,7 @@ def main():
                     eraser.set_color("red") if CellStorage.erase_mode else eraser.set_color("black")
                     screen.blit(eraser.image, eraser.rect)
                     screen.blit(s3_info.image, s3_info.rect)
-                    dis_light(save)
+                    save.dis_light()
                     screen.blit(save.image, save.rect)
                     pygame.display.flip()
             if running_screen == 3:
@@ -989,7 +986,7 @@ def main():
                         screen_quit_3()
                         running_screen = 1
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_s:
-                        launch(save)
+                        save.launch()
 
                     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                         x, y = event.pos
@@ -1000,7 +997,7 @@ def main():
                             screen_quit_3()
                             running_screen = 2
                         elif save.collide_point(x, y):
-                            launch(save)
+                            save.launch()
                 if running_screen == 3:
                     screen.blit(s2_inv.image, s2_inv.rect)
                     screen.blit(to_s1_text.text, to_s1_text.rect)
@@ -1008,8 +1005,8 @@ def main():
                     screen.blit(eraser.image, eraser.rect)
                     s3_info.set_color("red")
                     screen.blit(s3_info.image, s3_info.rect)
-                    blit_text(screen, s3_info_text, (20, 25), pygame.font.SysFont('Courier New', 25))
-                    dis_light(save)
+                    blit_text(screen, s3_info_text, (20, 25), pygame.font.SysFont('Courier New', 24))
+                    save.dis_light()
                     blit_button(save)
                     pygame.display.flip()
 
