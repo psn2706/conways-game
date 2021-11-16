@@ -653,16 +653,16 @@ def main():
             keyboard[c] = KeyboardKey()
         keyboard['ctrl'] = KeyboardKey()
 
-        s2_left = Button(get_img('left.png', 1 / 6, color='black'))
+        s2_left = Button(get_img('data/left.png', 1 / 6, color='black'))
         s2_left.upd_pos(0, (height - s2_left.height()) // 2)
-        s2_right = Button(get_img('right.png', 1 / 6))
+        s2_right = Button(get_img('data/right.png', 1 / 6))
         s2_right.upd_pos(width - s2_right.width(), (height - s2_left.height()) // 2)
-        s2_inv = Button(get_img('i.png', 1 / 2))
+        s2_inv = Button(get_img('data/i.png', 1 / 2))
         s2_inv.upd_pos(99 / 100 * width - s2_inv.width(), 10)
         __size__icon__ = s2_inv.size()
-        eraser = Button(get_img('eraser.png', size=__size__icon__))
+        eraser = Button(get_img('data/eraser.png', size=__size__icon__))
         eraser.upd_pos(s2_inv.pos()[0] - eraser.width(), 10)
-        s3_info = Button(get_img('info.png', size=__size__icon__, color='black'))
+        s3_info = Button(get_img('data/info.png', size=__size__icon__, color='black'))
         s3_info.upd_pos(eraser.pos()[0] - s3_info.width(), 10)
         font = pygame.font.Font(None, 48)
         to_s1_text = Text(font.render('Вернуться к полю', True, "black"))
@@ -691,7 +691,7 @@ def main():
                         'Клавиши ctrl+z - откатиться к последнему сохранению. \n'
                         'v, b - путешествия во времени (не сохраняются). \n'
                         'Клавиша esc - выйти из текущего окна (в поле: выйти из приложения). \n')
-        save = SaveBox('__parameters__', get_img('save.png', size=__size__icon__))
+        save = SaveBox('__parameters__', get_img('data/save.png', size=__size__icon__))
         save.upd_rect(s3_info.pos()[0] - s3_info.width(), 10, s3_info.width(), s3_info.height())
         save.upd_by_file()
 
