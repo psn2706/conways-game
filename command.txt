@@ -1,1 +1,2 @@
 pyinstaller --onefile -F --add-data "i.png;." --add-data "left.png;." --add-data "right.png;." main.py
+# or just edit main.spec and run pyinstaller -F main.spec
