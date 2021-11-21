@@ -19,6 +19,9 @@ def main():
     pygame.init()
     screen = pygame.display.set_mode((GetSystemMetrics(0), GetSystemMetrics(1)), pygame.FULLSCREEN)
 
+    class Save:
+        text = ''
+
     class MyObject:
         def __init__(self, obj):
             self.obj = obj
@@ -485,7 +488,7 @@ def main():
             lst = []
             lst.extend(list('0123456789qwertyuiopasdfghjklzxcvbnm'))
             lst.extend([f'F{i}' for i in range(1, 13)])
-            lst.extend(['ctrl', 'esc', 'left', 'right', 'up', 'down'])
+            lst.extend(['ctrl', 'esc', 'space', 'left', 'right', 'up', 'down'])
             return lst
 
     def get_keyboard_key(key):
@@ -589,6 +592,8 @@ def main():
             return 'ctrl'
         if key == pygame.K_ESCAPE:
             return 'esc'
+        if key == pygame.K_SPACE:
+            return 'space'
         if key == pygame.K_LEFT:
             return 'left'
         if key == pygame.K_RIGHT:
@@ -717,8 +722,8 @@ def main():
         font = pygame.font.Font(None, 48)
         to_s1_text = Text(font.render('Вернуться к полю', True, "black"))
         to_s1_text.upd_pos((width - to_s1_text.width()) // 2 - 10, height - 2 * to_s1_text.height())
-        s3_info_text = ('Игра \"жизнь\" Джона Конвея \n'
-                        'Вы расставляете живые клетки, далее на каждом шаге происходит: \n'
+        s3_info_text = ('Игра \"жизнь\" Джона Конвея. \n'
+                        'Вы расставляете на клетчатом поле живые клетки, далее на каждом шаге происходит: \n'
                         '1) если у живой клетки два или три живых соседа (из 8), то она выживает. \n'
                         '2) иначе живая клетка умирает. \n'
                         '3) мертвая клетка становится живой, если у неё ровно 3 живых соседа. \n'
@@ -728,9 +733,9 @@ def main():
                         'ПКМ(зажатая) - перемещение по полю. \n'
                         'Пробел - запустить/приостановить игру Конвея. \n'
                         'Левая/правая стрелочка - замедлить/ускорить игру в два раза (есть ограничения). \n'
-                        'Верхняя/нижняя стрелочка (не в реж.шаблона) или колесико мыши - увеличить/уменьшить поле. \n'
+                        'Колесико мыши - увеличить/уменьшить поле. \n'
                         'Клавиша p или средняя кнопка мыши - вкл/выкл режим шаблона. \n'
-                        'Верхняя/нижняя стрелочка в режиме шаблона - переключиться между шаблонами. \n'
+                        'Верхняя/нижняя стрелочка - переключиться между шаблонами. \n'
                         'Клавиша r - повернуть шаблон на 90 градусов по часовой стрелке. \n'
                         'Клавиша e или кнопка справа сверху - вкл/выкл режим ластика. \n'
                         '1, 2, 3, 4, 5, 0 - цвета рисования (0 фальшивый: т.е. не участвует в игре). \n'
@@ -744,6 +749,16 @@ def main():
         save = SaveBox('__parameters__', get_img('data/save.png', size=__size__icon__))
         save.upd_rect(s3_info.pos()[0] - s3_info.width(), 10, s3_info.width(), s3_info.height())
         save.upd_by_file()
+
+        def to_screen(sc):
+            nonlocal running_screen
+            if running_screen == 1:
+                screen_quit_1()
+            elif running_screen == 2:
+                screen_quit_2()
+            elif running_screen == 3:
+                screen_quit_3()
+            running_screen = sc
 
         while running:
             screen.fill((255, 255, 255))  # заполнить белым цветом
@@ -765,24 +780,38 @@ def main():
                         elif key == 'r':
                             CellStorage.rotate()
                         elif key == 'i':
-                            screen_quit_1()
-                            running_screen = 2
+                            to_screen(2)
                         elif key == 'esc':
-                            screen_quit_2()
-                            running_screen = 1
+                            running = False
                         elif key == 'F1':
-                            screen_quit_1()
-                            running_screen = 3
+                            to_screen(3)
                         elif key == 'e':
                             CellStorage.erase_mode = not CellStorage.erase_mode
-                        elif key == 's' and keyboard['ctrl'].is_pressed:
-                            save.launch()
                         elif key == 'p':
                             CellStorage.point_mode = not CellStorage.point_mode
                             if CellStorage.point_mode:
                                 CellStorage.set_point()
                             else:
                                 CellStorage.set_figure()
+                        elif key == 'space':
+                            CellStorage.pause = not CellStorage.pause
+                        elif key == 'left':
+                            dt = min(2 * dt, 16)
+                            if CellStorage.pause:
+                                CellStorage.pause = False
+                        elif key == 'right':
+                            dt = max(dt / 2, 1 / 2 ** 16)
+                            if CellStorage.pause:
+                                CellStorage.pause = False
+                        elif key == 'v':
+                            CellStorage.left_frame()
+                            keyboard['v'].game_pause = keyboard['b'].game_pause if keyboard['b'].is_pressed \
+                                else CellStorage.pause
+                        elif key == 'b':
+                            CellStorage.right_frame()
+                            keyboard['b'].game_pause = keyboard['v'].game_pause if keyboard['v'].is_pressed \
+                                else CellStorage.pause
+
                     if keyboard['ctrl'].is_pressed:
                         if keyboard['k'].is_pressed:
                             false_cells.clear()
@@ -792,28 +821,6 @@ def main():
                             save.upd_by_file(full=False)
                     elif keyboard['k'].is_pressed:
                         CellStorage.clear()
-
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                        CellStorage.pause = not CellStorage.pause
-
-                    # re_time
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_LEFT:
-                        dt = min(2 * dt, 16)
-                        if CellStorage.pause:
-                            CellStorage.pause = False
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT:
-                        dt = max(dt / 2, 1 / 2 ** 16)
-                        if CellStorage.pause:
-                            CellStorage.pause = False
-
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_v:
-                        CellStorage.left_frame()
-                        keyboard['v'].game_pause = keyboard['b'].game_pause if keyboard['b'].is_pressed \
-                            else CellStorage.pause
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_b:
-                        CellStorage.right_frame()
-                        keyboard['b'].game_pause = keyboard['v'].game_pause if keyboard['v'].is_pressed \
-                            else CellStorage.pause
 
                     if keyboard['v'].is_pressed and keyboard['v'].get_tick():
                         CellStorage.left_frame()
@@ -827,17 +834,15 @@ def main():
                     if event.type == pygame.KEYUP and event.key == pygame.K_b:
                         CellStorage.pause = keyboard['b'].game_pause
 
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_UP and CellStorage.point_mode \
-                            or event.type == pygame.MOUSEBUTTONDOWN and event.button == 4:
-                        CellStorage.resize(2)
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN and CellStorage.point_mode \
-                            or event.type == pygame.MOUSEBUTTONDOWN and event.button == 5:
-                        CellStorage.resize(1 / 2)
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_UP and not CellStorage.point_mode:
                         CellStorage.set_right_figure(empty_allow=False)
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN and not CellStorage.point_mode:
                         CellStorage.set_left_figure()
 
+                    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 4:
+                        CellStorage.resize(2)
+                    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 5:
+                        CellStorage.resize(1 / 2)
                     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 2:
                         CellStorage.point_mode = not CellStorage.point_mode
                         CellStorage.set_point() if CellStorage.point_mode \
@@ -846,11 +851,9 @@ def main():
                     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                         x, y = event.pos
                         if s2_inv.collide_point(x, y):
-                            screen_quit_1()
-                            running_screen = 2
+                            to_screen(2)
                         elif s3_info.collide_point(x, y):
-                            screen_quit_1()
-                            running_screen = 3
+                            to_screen(3)
                         elif save.collide_point(x, y):
                             save.launch()
                         elif eraser.collide_point(x, y):
@@ -949,15 +952,10 @@ def main():
                             false_drawing = True
                         elif key == 'r':
                             CellStorage.rotate()
-                        elif key == 'i':
-                            screen_quit_2()
-                            running_screen = 1
-                        elif key == 'esc':
-                            screen_quit_2()
-                            running_screen = 1
+                        elif key == 'i' or key == 'esc':
+                            to_screen(1)
                         elif key == 'F1':
-                            screen_quit_2()
-                            running_screen = 3
+                            to_screen(3)
                         elif key == 'e':
                             CellStorage.erase_mode = not CellStorage.erase_mode
                         elif key == 's' and keyboard['ctrl'].is_pressed:
@@ -974,13 +972,11 @@ def main():
                         elif s2_right.collide_point(x, y):
                             CellStorage.set_right_figure()
                         elif to_s1_text.collide_point(x, y) or s2_inv.collide_point(x, y):
-                            screen_quit_2()
-                            running_screen = 1
+                            to_screen(1)
                         elif eraser.collide_point(x, y):
                             CellStorage.erase_mode = not CellStorage.erase_mode
                         elif s3_info.collide_point(x, y):
-                            screen_quit_2()
-                            running_screen = 3
+                            to_screen(3)
                         elif save.collide_point(x, y):
                             save.make_file()
                             save.set_color('red')
@@ -997,11 +993,9 @@ def main():
                         if left_click_moving_time > 0 and time() - left_click_moving_time >= 0.1:
                             CellStorage.upd_point_by_motion(s2=True)
 
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_UP \
-                            or event.type == pygame.MOUSEBUTTONDOWN and event.button == 4:
+                    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 4:
                         CellStorage.resize(2, s2=True)
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN \
-                            or event.type == pygame.MOUSEBUTTONDOWN and event.button == 5:
+                    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 5:
                         CellStorage.resize(1 / 2, s2=True)
                 if running_screen != 2:
                     continue
@@ -1023,17 +1017,15 @@ def main():
                     if event.type == pygame.QUIT:
                         running = False
                     update_key(event)
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_i:
-                        screen_quit_3()
-                        running_screen = 2
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                        screen_quit_3()
-                        running_screen = 1
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_F1:
-                        screen_quit_3()
-                        running_screen = 1
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_s:
-                        save.launch()
+
+                    if event.type == pygame.KEYDOWN:
+                        key = get_keyboard_key(event.key)
+                        if key == 'i':
+                            to_screen(2)
+                        elif key == 'F1' or key == 'esc':
+                            to_screen(1)
+                        elif key == 's' and keyboard['ctrl'].is_pressed:
+                            save.launch()
 
                     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                         x, y = event.pos
