@@ -480,7 +480,7 @@ def main():
 
         def get_tick(self):
             if not self.tick:
-                self.tick = time() - self.seconds >= 0.1
+                self.tick = time() - self.seconds >= 0.2
             return self.tick
 
         @staticmethod
@@ -796,13 +796,9 @@ def main():
                         elif key == 'space':
                             CellStorage.pause = not CellStorage.pause
                         elif key == 'left':
-                            dt = min(2 * dt, 16)
-                            if CellStorage.pause:
-                                CellStorage.pause = False
+                            dt = min(2 * dt, 4)
                         elif key == 'right':
-                            dt = max(dt / 2, 1 / 2 ** 16)
-                            if CellStorage.pause:
-                                CellStorage.pause = False
+                            dt = max(dt / 2, 1 / 2 ** 12)
                         elif key == 'v':
                             CellStorage.left_frame()
                             keyboard['v'].game_pause = keyboard['b'].game_pause if keyboard['b'].is_pressed \
@@ -821,13 +817,6 @@ def main():
                             save.upd_by_file(full=False)
                     elif keyboard['k'].is_pressed:
                         CellStorage.clear()
-
-                    if keyboard['v'].is_pressed and keyboard['v'].get_tick():
-                        CellStorage.left_frame()
-                        CellStorage.pause = True
-                    if keyboard['b'].is_pressed and keyboard['b'].get_tick():
-                        CellStorage.right_frame()
-                        CellStorage.pause = True
 
                     if event.type == pygame.KEYUP and event.key == pygame.K_v:
                         CellStorage.pause = keyboard['v'].game_pause
@@ -915,13 +904,24 @@ def main():
                             CellStorage.y += event.rel[1]
                 if running_screen != 1:
                     continue
+
                 if not CellStorage.point_mode:
                     i, j = CellStorage.mouse_cell_coord()
                     CellStorage.draw_pale(i, j)
 
-                if not CellStorage.pause and time() - t >= dt:
-                    CellStorage.new_stage()
-                    t = time()
+                if time() - t >= dt:
+                    if keyboard['v'].is_pressed and keyboard['v'].get_tick():
+                        CellStorage.left_frame()
+                        CellStorage.pause = True
+                        t = time()
+                    if keyboard['b'].is_pressed and keyboard['b'].get_tick():
+                        CellStorage.right_frame()
+                        CellStorage.pause = True
+                        t = time()
+                    if not CellStorage.pause:
+                        CellStorage.new_stage()
+                        t = time()
+
                 for cell in false_cells.keys():
                     CellStorage.s_draw(cell[0], cell[1], (170, 170, 170))
                 for cell in CellStorage.values():
