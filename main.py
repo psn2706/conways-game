@@ -33,20 +33,7 @@ def main():
             fill(img, color)
         return img
 
-    class Save:
-        text = ''
-
-    class MyObject:
-        def __init__(self, obj):
-            self.obj = obj
-
-        def save(self, f):
-            f.write(str(self.obj))
-
-        def update(self, f, full=True):
-            self.obj.get(f, full)
-
-    class CellStorage(MyObject):
+    class CellStorage:
         x, y = 0, 0  # смещение
         x2, y2 = 0, 0
         size = 64
