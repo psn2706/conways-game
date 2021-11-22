@@ -40,19 +40,27 @@ class Button(Rect):
         self.rect = list(image.get_rect())
         self.hidden = False
         self.active = False
-        self.action = lambda: None
+        self.__action = lambda: None
 
     def set_color(self, color):
         self.image = self.image.convert_alpha()
         fill(self.image, color)
 
-    def blit(self, screen):
-        screen.blit(self.image, self.rect)
+    def set_action(self, action):
+        self.__action = action
 
-    def do_action(self):
-        if self.active:
-            self.action()
+    def collide_point(self, x, y):
+        return not self.hidden and super().collide_point(x, y)
+
+    def blit(self, screen):
+        if not self.hidden:
+            screen.blit(self.image, self.rect)
+
+    def action(self, as_btn=True):
+        if (self.active and not self.hidden) or not as_btn:
+            self.__action()
         self.active = False
+
 
 class Text(Rect):
     def __init__(self, text):
