@@ -12,6 +12,7 @@ class KeyboardKey:
     def down(self):
         self.is_pressed = True
         self.seconds = time()
+        self.tick = False
 
     def up(self):
         self.is_pressed = False
@@ -20,7 +21,7 @@ class KeyboardKey:
     def get_tick(self):
         if not self.tick:
             self.tick = time() - self.seconds >= 0.2
-        return self.tick
+        return self.tick and self.is_pressed
 
     @staticmethod
     def all_keys():

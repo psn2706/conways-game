@@ -38,6 +38,9 @@ class Button(Rect):
         super().__init__()
         self.image = image
         self.rect = list(image.get_rect())
+        self.hidden = False
+        self.active = False
+        self.action = lambda: None
 
     def set_color(self, color):
         self.image = self.image.convert_alpha()
@@ -46,6 +49,10 @@ class Button(Rect):
     def blit(self, screen):
         screen.blit(self.image, self.rect)
 
+    def do_action(self):
+        if self.active:
+            self.action()
+        self.active = False
 
 class Text(Rect):
     def __init__(self, text):

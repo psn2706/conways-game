@@ -465,6 +465,23 @@ def main():
             s3_info.set_color('black')
             screen_quit_1()
 
+        def to_screen(sc):
+            nonlocal running_screen
+            if running_screen == sc:
+                if sc == 2:
+                    screen_quit_2()
+                elif sc == 3:
+                    screen_quit_3()
+                running_screen = 1
+                return
+            elif running_screen == 1:
+                screen_quit_1()
+            elif running_screen == 2:
+                screen_quit_2()
+            elif running_screen == 3:
+                screen_quit_3()
+            running_screen = sc
+
         pygame.display.set_caption('Convey\'s game of life')
         width, height = GetSystemMetrics(0), GetSystemMetrics(1)
         running = True
@@ -477,6 +494,7 @@ def main():
         colors = list(CellStorage.colors.keys())
         false_cells = {}
         keyboard = dict([(key, KeyboardKey()) for key in KeyboardKey.all_keys()])
+        hidden_mode = 0
 
         s2_left = Button(get_img('data/left.png', 1 / 6, color='black'))
         s2_left.upd_pos(0, (height - s2_left.height()) // 2)
@@ -502,7 +520,7 @@ def main():
                         'ЛКМ(зажатая) - рисовать линию живых. \n'
                         'ПКМ(зажатая) - перемещение по полю. \n'
                         'Пробел - запустить/приостановить игру Конвея. \n'
-                        'Левая/правая стрелочка - замедлить/ускорить игру в два раза (есть ограничения). \n'
+                        'Левая/правая стрелочка - замедлить/ускорить игру в два раза. \n'
                         'Колесико мыши - увеличить/уменьшить поле. \n'
                         'Клавиша p или средняя кнопка мыши - вкл/выкл режим шаблона. \n'
                         'Верхняя/нижняя стрелочка - переключиться между шаблонами. \n'
@@ -519,17 +537,23 @@ def main():
         save = SaveBox('__parameters__', get_img('data/save.png', size=__size__icon__))
         save.upd_rect(s3_info.pos()[0] - s3_info.width(), 10, s3_info.width(), s3_info.height())
         save.upd_by_file()
+        play_box = Button(get_img('data/play.png', size=__size__icon__))
+        play_box.upd_pos(20, 20)
+        buttons = [s2_left, s2_right, s2_inv, eraser, s3_info, save, play_box]
+        s2_left.action = CellStorage.set_left_figure
+        s2_right.action = CellStorage.set_right_figure
+        s2_inv.action = lambda: to_screen(2)
+        s3_info.action = lambda: to_screen(3)
+        save.action = save.launch
 
-        def to_screen(sc):
-            nonlocal running_screen
-            if running_screen == 1:
-                screen_quit_1()
-            elif running_screen == 2:
-                screen_quit_2()
-            elif running_screen == 3:
-                screen_quit_3()
-            running_screen = sc
+        def __upd_pause():
+            CellStorage.pause = not CellStorage.pause
 
+        def __upd_erase_mode():
+            CellStorage.erase_mode = not CellStorage.erase_mode
+
+        eraser.action = __upd_erase_mode
+        play_box.action = __upd_pause
         while running:
             screen.fill((255, 255, 255))  # заполнить белым цветом
             if running_screen == 1:
@@ -551,6 +575,8 @@ def main():
                             CellStorage.rotate()
                         elif key == 'i':
                             to_screen(2)
+                        elif key == 'h':
+                            hidden_mode = (hidden_mode + 1) % 3
                         elif key == 'esc':
                             running = False
                         elif key == 'F1':
@@ -568,7 +594,7 @@ def main():
                         elif key == 'left':
                             dt = min(2 * dt, 4)
                         elif key == 'right':
-                            dt = max(dt / 2, 1 / 2 ** 12)
+                            dt = max(dt / 2, 1 / 2 ** 7)
                         elif key == 'v':
                             CellStorage.left_frame()
                             keyboard['v'].game_pause = keyboard['b'].game_pause if keyboard['b'].is_pressed \
@@ -611,6 +637,8 @@ def main():
                         x, y = event.pos
                         if s2_inv.collide_point(x, y):
                             to_screen(2)
+                        elif play_box.collide_point(x, y):
+                            CellStorage.pause = not CellStorage.pause
                         elif s3_info.collide_point(x, y):
                             to_screen(3)
                         elif save.collide_point(x, y):
@@ -674,17 +702,18 @@ def main():
                             CellStorage.y += event.rel[1]
                 if running_screen != 1:
                     continue
-
+                # if hidden_mode == 0:
+                #
                 if not CellStorage.point_mode:
                     i, j = CellStorage.mouse_cell_coord()
                     CellStorage.draw_pale(i, j)
 
                 if time() - t >= dt:
-                    if keyboard['v'].is_pressed and keyboard['v'].get_tick():
+                    if keyboard['v'].get_tick():
                         CellStorage.left_frame()
                         CellStorage.pause = True
                         t = time()
-                    if keyboard['b'].is_pressed and keyboard['b'].get_tick():
+                    if keyboard['b'].get_tick():
                         CellStorage.right_frame()
                         CellStorage.pause = True
                         t = time()
@@ -697,12 +726,17 @@ def main():
                 for cell in CellStorage.values():
                     cell.draw()
 
-                blit_button(s2_inv, screen)
-                eraser.set_color("red") if CellStorage.erase_mode else eraser.set_color("black")
-                blit_button(eraser, screen)
-                blit_button(s3_info, screen)
                 save.dis_light()
+                eraser.set_color("red") if CellStorage.erase_mode else eraser.set_color("black")
+                play_box.set_color("black") if CellStorage.pause else play_box.set_color("red")
+                blit_button(play_box, screen)
                 blit_button(save, screen)
+                blit_button(s3_info, screen)
+                blit_button(eraser, screen)
+                blit_button(s2_inv, screen)
+                blit_text(screen, f'{int(1 / dt) if 1 / dt == int(1 / dt) else 1 / dt} кадр/сек',
+                          (20 + play_box.width(), 20 + play_box.height() // 4),
+                          pygame.font.SysFont('Courier New', 24))
                 pygame.display.flip()
             if running_screen == 2:
                 for event in pygame.event.get():
