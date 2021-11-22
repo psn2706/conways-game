@@ -1,11 +1,13 @@
-from win32api import GetSystemMetrics
 import pygame
 import math
 import os
 import sys
+import ast
+from win32api import GetSystemMetrics
 from time import time
 from pathlib import Path
-import ast
+from keyboard import KeyboardKey, update_key, get_keyboard_key
+from rect import fill, Button, Text, blit_button, blit_text
 
 
 def resource_path(relative):
@@ -18,6 +20,18 @@ def resource_path(relative):
 def main():
     pygame.init()
     screen = pygame.display.set_mode((GetSystemMetrics(0), GetSystemMetrics(1)), pygame.FULLSCREEN)
+
+    def get_img(s, k=None, size=None, color=None):
+        img = pygame.image.load(resource_path(s))
+        if k is not None:
+            img = pygame.transform.scale(
+                img, (img.get_width() * k,
+                      img.get_height() * k))
+        if size is not None:
+            img = pygame.transform.scale(img, (size[0], size[1]))
+        if color is not None:
+            fill(img, color)
+        return img
 
     class Save:
         text = ''
@@ -43,8 +57,8 @@ def main():
         frames = [{}]
         frame = 0
         dict_cell = {}
-        r_new = {}
-        r_del = {}
+        new_cells = {}
+        del_cells = {}
         colors = {
             "red": (230, 0, 0),
             "green": (0, 200, 0),
@@ -199,11 +213,11 @@ def main():
                 CellStorage.frames[CellStorage.frame] = CellStorage.dict_cell.copy()
                 for cell in CellStorage.dict_cell.values():
                     cell.update()
-                for cell in CellStorage.r_del:
+                for cell in CellStorage.del_cells:
                     CellStorage.delitem(cell)
-                for cell, color in CellStorage.r_new.items():
+                for cell, color in CellStorage.new_cells.items():
                     Cell(cell[0], cell[1], color)
-                CellStorage.r_del, CellStorage.r_new = {}, {}
+                CellStorage.del_cells, CellStorage.new_cells = {}, {}
                 CellStorage.frame += 1
                 CellStorage.frames.append(CellStorage.dict_cell.copy())
 
@@ -371,238 +385,15 @@ def main():
             CellStorage.s_draw(self.i, self.j, self.color)
 
         def update(self):
-            _i, _j = self.i, self.j
+            i, j = self.i, self.j
             for p in CellStorage.neigh:
-                x, y = _i + p[0], _j + p[1]
+                x, y = i + p[0], j + p[1]
                 if CellStorage.count_neigh(x, y) == 3:
-                    if (x, y) not in CellStorage.r_new and (x, y) not in CellStorage.dict_cell:
-                        CellStorage.r_new[(x, y)] = CellStorage.medium_neigh_color(x, y)
-            cnt = CellStorage.count_neigh(_i, _j)
+                    if (x, y) not in CellStorage.new_cells and (x, y) not in CellStorage.dict_cell:
+                        CellStorage.new_cells[(x, y)] = CellStorage.medium_neigh_color(x, y)
+            cnt = CellStorage.count_neigh(i, j)
             if cnt < 2 or cnt > 3:
-                CellStorage.r_del[(_i, _j)] = True
-
-    class Rect:
-        def __init__(self, rect=(0, 0, 0, 0)):
-            self.rect = rect
-
-        def width(self):
-            return self.rect[2]
-
-        def height(self):
-            return self.rect[3]
-
-        def pos(self):
-            return self.rect[0], self.rect[1]
-
-        def size(self):
-            return self.rect[2], self.rect[3]
-
-        def upd_pos(self, x, y):
-            self.rect[0], self.rect[1] = x, y
-
-        def upd_rect(self, x, y, w, h):
-            self.rect = (x, y, w, h)
-
-        def collide_point(self, x, y):
-            return self.rect[0] <= x <= self.rect[0] + self.rect[2] \
-                   and self.rect[1] <= y <= self.rect[1] + self.rect[3]
-
-    def fill(surface, color):
-        w, h = surface.get_size()
-        for x in range(w):
-            for y in range(h):
-                if surface.get_at((x, y))[3] > 0:
-                    surface.set_at((x, y), color)
-
-    class Button(Rect):
-        def __init__(self, image):
-            super().__init__()
-            self.image = image
-            self.rect = list(image.get_rect())
-
-        def set_color(self, color):
-            self.image = self.image.convert_alpha()
-            fill(self.image, color)
-
-    def get_img(s, k=None, size=None, color=None):
-        img = pygame.image.load(resource_path(s))
-        if k is not None:
-            img = pygame.transform.scale(
-                img, (img.get_width() * k,
-                      img.get_height() * k))
-        if size is not None:
-            img = pygame.transform.scale(img, (size[0], size[1]))
-        if color is not None:
-            fill(img, color)
-        return img
-
-    class Text(Rect):
-        def __init__(self, text):
-            super().__init__()
-            self.text = text
-            self.rect = list(text.get_rect())
-
-    def blit_text(surface, text, pos, font, color=pygame.Color('black')):
-        words = [word.split(' ') for word in text.splitlines()]  # 2D array where each row is a list of words.
-        space = font.size(' ')[0]  # The width of a space.
-        max_width, max_height = surface.get_size()
-        x, y = pos
-        for line in words:
-            word_width, word_height = 0, 0
-            for word in line:
-                word_surface = font.render(word, True, color)
-                word_width, word_height = word_surface.get_size()
-                if x + word_width >= max_width:
-                    x = pos[0]  # Reset the x.
-                    y += word_height  # Start on new row.
-                surface.blit(word_surface, (x, y))
-                x += word_width + space
-            x = pos[0]  # Reset the x.
-            y += word_height  # Start on new row.
-
-    def blit_button(btn):
-        screen.blit(btn.image, btn.rect)
-
-    class KeyboardKey:
-        def __init__(self):
-            self.is_pressed = False
-            self.seconds = time()
-            self.game_pause = CellStorage.pause
-            self.tick = False
-
-        def down(self):
-            self.is_pressed = True
-            self.seconds = time()
-
-        def up(self):
-            self.is_pressed = False
-            self.tick = False
-
-        def get_tick(self):
-            if not self.tick:
-                self.tick = time() - self.seconds >= 0.2
-            return self.tick
-
-        @staticmethod
-        def all_keys():
-            lst = []
-            lst.extend(list('0123456789qwertyuiopasdfghjklzxcvbnm'))
-            lst.extend([f'F{i}' for i in range(1, 13)])
-            lst.extend(['ctrl', 'esc', 'space', 'left', 'right', 'up', 'down'])
-            return lst
-
-    def get_keyboard_key(key):
-        if key == pygame.K_0:
-            return '0'
-        if key == pygame.K_1:
-            return '1'
-        if key == pygame.K_2:
-            return '2'
-        if key == pygame.K_3:
-            return '3'
-        if key == pygame.K_4:
-            return '4'
-        if key == pygame.K_5:
-            return '5'
-        if key == pygame.K_6:
-            return '6'
-        if key == pygame.K_7:
-            return '7'
-        if key == pygame.K_8:
-            return '8'
-        if key == pygame.K_9:
-            return '9'
-        if key == pygame.K_a:
-            return 'a'
-        if key == pygame.K_b:
-            return 'b'
-        if key == pygame.K_c:
-            return 'c'
-        if key == pygame.K_d:
-            return 'd'
-        if key == pygame.K_e:
-            return 'e'
-        if key == pygame.K_f:
-            return 'f'
-        if key == pygame.K_g:
-            return 'g'
-        if key == pygame.K_h:
-            return 'h'
-        if key == pygame.K_i:
-            return 'i'
-        if key == pygame.K_j:
-            return 'j'
-        if key == pygame.K_k:
-            return 'k'
-        if key == pygame.K_l:
-            return 'l'
-        if key == pygame.K_m:
-            return 'm'
-        if key == pygame.K_n:
-            return 'n'
-        if key == pygame.K_o:
-            return 'o'
-        if key == pygame.K_p:
-            return 'p'
-        if key == pygame.K_q:
-            return 'q'
-        if key == pygame.K_r:
-            return 'r'
-        if key == pygame.K_s:
-            return 's'
-        if key == pygame.K_t:
-            return 't'
-        if key == pygame.K_u:
-            return 'u'
-        if key == pygame.K_v:
-            return 'v'
-        if key == pygame.K_w:
-            return 'w'
-        if key == pygame.K_x:
-            return 'x'
-        if key == pygame.K_y:
-            return 'y'
-        if key == pygame.K_z:
-            return 'z'
-        if key == pygame.K_F1:
-            return 'F1'
-        if key == pygame.K_F2:
-            return 'F2'
-        if key == pygame.K_F3:
-            return 'F3'
-        if key == pygame.K_F4:
-            return 'F4'
-        if key == pygame.K_F5:
-            return 'F5'
-        if key == pygame.K_F6:
-            return 'F6'
-        if key == pygame.K_F7:
-            return 'F7'
-        if key == pygame.K_F8:
-            return 'F8'
-        if key == pygame.K_F9:
-            return 'F9'
-        if key == pygame.K_F10:
-            return 'F10'
-        if key == pygame.K_F11:
-            return 'F11'
-        if key == pygame.K_F12:
-            return 'F12'
-        if key == pygame.K_LCTRL or key == pygame.K_RCTRL:
-            return 'ctrl'
-        if key == pygame.K_ESCAPE:
-            return 'esc'
-        if key == pygame.K_SPACE:
-            return 'space'
-        if key == pygame.K_LEFT:
-            return 'left'
-        if key == pygame.K_RIGHT:
-            return 'right'
-        if key == pygame.K_UP:
-            return 'up'
-        if key == pygame.K_DOWN:
-            return 'down'
-        return 'None'
+                CellStorage.del_cells[(i, j)] = True
 
     def run():
         class SaveBox(Button):
@@ -648,9 +439,11 @@ def main():
                                 CellStorage.set_figure_i(_x)
                                 CellStorage.upd_figures(_y)
                                 dt = z
-                            false_cells.clear()
-                            for _cell in ast.literal_eval(f.readline()):
-                                false_cells[_cell] = 1
+                            line = f.readline()
+                            if full:
+                                false_cells.clear()
+                                for _cell in ast.literal_eval(line):
+                                    false_cells[_cell] = 1
                             color = f.readline().split()[0]
                             if full:
                                 CellStorage.set_color(color)
@@ -684,16 +477,6 @@ def main():
         def screen_quit_3():
             s3_info.set_color('black')
             screen_quit_1()
-
-        def update_key(e):
-            if e.type == pygame.KEYDOWN:
-                key = get_keyboard_key(e.key)
-                if key in keyboard:
-                    keyboard[key].down()
-            if e.type == pygame.KEYUP:
-                key = get_keyboard_key(e.key)
-                if key in keyboard:
-                    keyboard[key].up()
 
         pygame.display.set_caption('Convey\'s game of life')
         width, height = GetSystemMetrics(0), GetSystemMetrics(1)
@@ -767,7 +550,7 @@ def main():
                     if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                         running = False
 
-                    update_key(event)
+                    update_key(event, keyboard)
 
                     if event.type == pygame.KEYDOWN:
                         key = get_keyboard_key(event.key)
@@ -927,19 +710,19 @@ def main():
                 for cell in CellStorage.values():
                     cell.draw()
 
-                blit_button(s2_inv)
+                blit_button(s2_inv, screen)
                 eraser.set_color("red") if CellStorage.erase_mode else eraser.set_color("black")
-                blit_button(eraser)
-                blit_button(s3_info)
+                blit_button(eraser, screen)
+                blit_button(s3_info, screen)
                 save.dis_light()
-                blit_button(save)
+                blit_button(save, screen)
                 pygame.display.flip()
             if running_screen == 2:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         running = False
 
-                    update_key(event)
+                    update_key(event, keyboard)
 
                     if event.type == pygame.KEYDOWN:
                         key = get_keyboard_key(event.key)
@@ -960,6 +743,8 @@ def main():
                             CellStorage.erase_mode = not CellStorage.erase_mode
                         elif key == 's' and keyboard['ctrl'].is_pressed:
                             save.launch()
+                        elif key == 'k':
+                            CellStorage.figures[CellStorage.figure_index].clear()
                         elif key == 'left':
                             CellStorage.set_left_figure()
                         elif key == 'right':
@@ -999,24 +784,25 @@ def main():
                         CellStorage.resize(1 / 2, s2=True)
                 if running_screen != 2:
                     continue
+
                 CellStorage.s_draw(0, 0, (222, 222, 222), s2=True)
                 CellStorage.draw_figure(s2=True)
-                screen.blit(s2_left.image, s2_left.rect)
-                screen.blit(s2_right.image, s2_right.rect)
+                blit_button(s2_left, screen)
+                blit_button(s2_right, screen)
                 s2_inv.set_color("red")
-                screen.blit(s2_inv.image, s2_inv.rect)
+                blit_button(s2_inv, screen)
                 screen.blit(to_s1_text.text, to_s1_text.rect)
                 eraser.set_color("red") if CellStorage.erase_mode else eraser.set_color("black")
-                screen.blit(eraser.image, eraser.rect)
-                screen.blit(s3_info.image, s3_info.rect)
+                blit_button(eraser, screen)
+                blit_button(s3_info, screen)
                 save.dis_light()
-                screen.blit(save.image, save.rect)
+                blit_button(save, screen)
                 pygame.display.flip()
             if running_screen == 3:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         running = False
-                    update_key(event)
+                    update_key(event, keyboard)
 
                     if event.type == pygame.KEYDOWN:
                         key = get_keyboard_key(event.key)
@@ -1039,15 +825,15 @@ def main():
                             save.launch()
                 if running_screen != 3:
                     continue
-                screen.blit(s2_inv.image, s2_inv.rect)
+                blit_button(s2_inv, screen)
                 screen.blit(to_s1_text.text, to_s1_text.rect)
                 eraser.set_color("red") if CellStorage.erase_mode else eraser.set_color("black")
-                screen.blit(eraser.image, eraser.rect)
+                blit_button(eraser, screen)
                 s3_info.set_color("red")
-                screen.blit(s3_info.image, s3_info.rect)
+                blit_button(s3_info, screen)
                 blit_text(screen, s3_info_text, (20, 25), pygame.font.SysFont('Courier New', 24))
                 save.dis_light()
-                blit_button(save)
+                blit_button(save, screen)
                 pygame.display.flip()
 
         pygame.quit()
