@@ -7,7 +7,7 @@ from win32api import GetSystemMetrics
 from time import time
 from pathlib import Path
 from keyboard import KeyboardKey, update_key, get_keyboard_key
-from rect import fill, Button, Text, blit_button, blit_text
+from rect import fill, Button, Text, blit_text
 
 
 def resource_path(relative):
@@ -79,36 +79,6 @@ def main():
             []
         ]
 
-        def __str__(self):
-            return f'{CellStorage.x} {CellStorage.y} {CellStorage.size}\n' \
-                   f'{str(list(CellStorage.keys()))}\n' \
-                   f'{str(list(CellStorage.cell_colors()))}\n' \
-                   f'{CellStorage.get_figure_i()}\n' \
-                   f'{str(list(CellStorage.figures))}\n' \
-                   f'{CellStorage.frame}' \
-                   f'{str(list(fr.keys() for fr in CellStorage.frames))}'
-
-        def __init__(self):
-            super().__init__(self)
-
-        @staticmethod
-        def get(f, full):
-            x, y, z = map(float, f.readline().split())
-            if full:
-                CellStorage.x, CellStorage.y, CellStorage.size = x, y, z
-            cords = ast.literal_eval(f.readline())
-            colors = ast.literal_eval(f.readline())
-            CellStorage.clear()
-            for i in range(len(cords)):
-                Cell(cords[i][0], cords[i][1], colors[i])
-            figure_i = int(f.readline())
-            figures = ast.literal_eval(f.readline())
-            if full:
-                CellStorage.figure_index = figure_i
-                CellStorage.figures = figures
-            CellStorage.frame = int(f.readline())
-            CellStorage.clear()
-
         @staticmethod
         def rotate(figure=None):
             if figure is None:
@@ -173,8 +143,8 @@ def main():
         @staticmethod
         def count_neigh(i, j):
             cnt = 0
-            for p in CellStorage.neigh:
-                cnt += (i + p[0], j + p[1]) in CellStorage.dict_cell
+            for di, dj in CellStorage.neigh:
+                cnt += (i + di, j + dj) in CellStorage.dict_cell
             return cnt
 
         @staticmethod
@@ -188,7 +158,8 @@ def main():
                 r += cell.color[0] ** 2
                 g += cell.color[1] ** 2
                 b += cell.color[2] ** 2
-            r, g, b = map(lambda x: math.ceil((x // len(lst)) ** 0.5), [r, g, b])
+            if len(lst):
+                r, g, b = map(lambda x: math.ceil((x // len(lst)) ** 0.5), [r, g, b])
             return r, g, b
 
         @staticmethod
@@ -281,6 +252,7 @@ def main():
         @staticmethod
         def clear():
             CellStorage.dict_cell.clear()
+            CellStorage.frames = CellStorage.frames[:CellStorage.frame + 1]
 
         @staticmethod
         def set_point():
@@ -460,8 +432,8 @@ def main():
         def screen_quit_1():
             nonlocal left_click_moving_time, right_click_moving
             left_click_moving_time, right_click_moving, CellStorage.erase_mode = 0.0, False, False
-            for btn in buttons1:
-                btn.hidden = False
+            for _btn in buttons1:
+                _btn.hidden = False
 
         def screen_quit_2():
             CellStorage.upd_figures()
@@ -474,13 +446,13 @@ def main():
 
         def hide_buttons():
             if hidden_mode == 0:
-                for btn in buttons1:
-                    btn.hidden = False
+                for _btn in buttons1:
+                    _btn.hidden = False
             elif hidden_mode == 1:
                 play_box.hidden = True
             elif hidden_mode == 2:
-                for btn in buttons1:
-                    btn.hidden = True
+                for _btn in buttons1:
+                    _btn.hidden = True
 
         def to_screen(sc):
             nonlocal running_screen
@@ -728,15 +700,6 @@ def main():
 
                 hide_buttons()
 
-                if hidden_mode == 0:
-                    blit_text(screen, f'{int(1 / dt) if 1 / dt == int(1 / dt) else 1 / dt} кадр/сек',
-                              (play_box.pos()[0] + play_box.width(), play_box.pos()[1] + play_box.height() // 4),
-                              pygame.font.SysFont('Courier New', 20))
-
-                if not CellStorage.point_mode:
-                    i, j = CellStorage.mouse_cell_coord()
-                    CellStorage.draw_pale(i, j)
-
                 if time() - t >= dt:
                     if keyboard['v'].get_tick():
                         CellStorage.left_frame()
@@ -752,6 +715,9 @@ def main():
 
                 for cell in false_cells.keys():
                     CellStorage.s_draw(cell[0], cell[1], (170, 170, 170))
+                if not CellStorage.point_mode:
+                    i, j = CellStorage.mouse_cell_coord()
+                    CellStorage.draw_pale(i, j)
                 for cell in CellStorage.values():
                     cell.draw()
 
@@ -760,6 +726,10 @@ def main():
                 play_box.set_color("black") if CellStorage.pause else play_box.set_color("red")
                 for btn in buttons1:
                     btn.blit(screen)
+                if hidden_mode == 0:
+                    blit_text(screen, f'{int(1 / dt) if 1 / dt == int(1 / dt) else 1 / dt} кадр/сек',
+                              (play_box.pos()[0] + play_box.width(), play_box.pos()[1] + play_box.height() // 4),
+                              pygame.font.SysFont('Courier New', 20))
                 pygame.display.flip()
             if running_screen == 2:
                 for event in pygame.event.get():
