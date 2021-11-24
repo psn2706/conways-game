@@ -515,7 +515,7 @@ def main():
                         'Клавиша p или средняя кнопка мыши - вкл/выкл режим шаблона. \n'
                         'Верхняя/нижняя стрелочка - переключиться между шаблонами. \n'
                         'Клавиша r - повернуть шаблон на 90 градусов по часовой стрелке. \n'
-                        'Клавиша e или кнопка справа сверху - вкл/выкл режим ластика. \n'
+                        'Клавиша event или кнопка справа сверху - вкл/выкл режим ластика. \n'
                         '1, 2, 3, 4, 5, 0 - цвета рисования (0 фальшивый: т.е. не участвует в игре). \n'
                         'Клавиша k - очистить поле, ctrl+k - очистить от фальшивого цвета. \n'
                         'Также у вас есть возможность создавать/удалять шаблоны и выбирать их в интентаре '
@@ -558,7 +558,7 @@ def main():
                     update_key(event, keyboard)
 
                     if event.type == pygame.KEYDOWN:
-                        key = get_keyboard_key(event.key)
+                        key = get_keyboard_key(event)
                         if key in list('12345'):
                             CellStorage.set_color(colors[int(key) - 1])
                             false_drawing = False
@@ -575,7 +575,7 @@ def main():
                             running = False
                         elif key == 'F1':
                             s3_info.action(as_btn=False)
-                        elif key == 'e':
+                        elif key == 'event':
                             eraser.action(as_btn=False)
                         elif key == 'p':
                             CellStorage.point_mode = not CellStorage.point_mode
@@ -739,7 +739,7 @@ def main():
                     update_key(event, keyboard)
 
                     if event.type == pygame.KEYDOWN:
-                        key = get_keyboard_key(event.key)
+                        key = get_keyboard_key(event)
                         if key in list('12345'):
                             colors = list(CellStorage.colors.keys())
                             CellStorage.set_color(colors[int(key) - 1])
@@ -755,7 +755,7 @@ def main():
                             s2_inv.action(as_btn=False)
                         elif key == 'F1':
                             s3_info.action(as_btn=False)
-                        elif key == 'e':
+                        elif key == 'event':
                             eraser.action(as_btn=False)
                         elif key == 's' and keyboard['ctrl'].is_pressed:
                             save.action(as_btn=False)
@@ -818,7 +818,7 @@ def main():
                     update_key(event, keyboard)
 
                     if event.type == pygame.KEYDOWN:
-                        key = get_keyboard_key(event.key)
+                        key = get_keyboard_key(event)
                         if key == 'i':
                             to_screen(2)
                         elif key == 'F1' or key == 'esc':
