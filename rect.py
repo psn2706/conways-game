@@ -70,21 +70,22 @@ class Text(Rect):
 
 
 def blit_text(surface, text, pos, font, color='black'):
-    words = [word.split(' ') for word in text.splitlines()]  # 2D array where each row is a list of words.
+    lines = [word.split(' ') for word in text.splitlines()]  # 2D array where each row is a list of words.
     space = font.size(' ')[0]  # The width of a space.
-    max_width, max_height = surface.get_size()
-    x, y = pos
-    for line in words:
+    x0, y0, width, height = surface.get_rect()
+    max_x, max_y = x0 + width, y0 + height
+    x, y = x0 + pos[0], y0 + pos[1]
+    for line in lines:
         word_width, word_height = 0, 0
         for word in line:
             word_surface = font.render(word, True, color)
             word_width, word_height = word_surface.get_size()
-            if x + word_width >= max_width:
-                x = pos[0]  # Reset the x.
+            if x + word_width >= max_x and x != x0 + pos[0]:
+                x = x0 + pos[0]  # Reset the x.
                 y += word_height  # Start on new row.
-            surface.blit(word_surface, (x, y))
+            surface.blit(word_surface, (x, y), (0, 0, max_x - x, max_y - y))
             x += word_width + space
-        x = pos[0]  # Reset the x.
+        x = x0 + pos[0]  # Reset the x.
         y += word_height  # Start on new row.
 
 
