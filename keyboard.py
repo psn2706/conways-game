@@ -7,21 +7,22 @@ class KeyboardKey:
         self.is_pressed = False
         self.seconds = time()
         self.game_pause = True
-        self.tick = False
+        self.hold = False
 
     def down(self):
         self.is_pressed = True
         self.seconds = time()
-        self.tick = False
+        self.hold = False
 
     def up(self):
         self.is_pressed = False
-        self.tick = False
+        self.hold = False
 
-    def get_tick(self):
-        if not self.tick:
-            self.tick = time() - self.seconds >= 0.2
-        return self.tick and self.is_pressed
+    def get_hold(self, _time=0.2):
+        if self.is_pressed:
+            if not self.hold:
+                self.hold = time() - self.seconds >= _time
+            return self.hold
 
     @staticmethod
     def all_keys():

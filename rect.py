@@ -63,10 +63,10 @@ class Button(Rect):
 
 
 class Text(Rect):
-    def __init__(self, text):
+    def __init__(self, render_text):
         super().__init__()
-        self.text = text
-        self.rect = list(text.get_rect())
+        self.text = render_text
+        self.rect = list(render_text.get_rect())
 
 
 def blit_text(surface, text, pos, font, color='black'):
