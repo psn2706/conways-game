@@ -725,7 +725,7 @@ def main():
                 eraser.set_color("red") if CellStorage.erase_mode else eraser.set_color("black")
                 play_box.set_color("black") if CellStorage.pause else play_box.set_color("red")
                 for btn in buttons1:
-                    btn.blit(screen)
+                    btn.blit()
                 if hidden_mode == 0:
                     blit_text(screen, f'{int(1 / dt) if 1 / dt == int(1 / dt) else 1 / dt} кадр/сек',
                               (play_box.pos()[0] + play_box.width(), play_box.pos()[1] + play_box.height() // 4),
@@ -804,12 +804,12 @@ def main():
                     continue
                 CellStorage.s_draw(0, 0, (222, 222, 222), s2=True)
                 CellStorage.draw_figure(s2=True)
-                screen.blit(to_s1_text.text, to_s1_text.rect)
+                to_s1_text.blit()
                 s2_inv.set_color("red")
                 eraser.set_color("red") if CellStorage.erase_mode else eraser.set_color("black")
                 save.dis_light()
                 for btn in buttons2:
-                    btn.blit(screen)
+                    btn.blit()
                 pygame.display.flip()
             if running_screen == 3:
                 for event in pygame.event.get():
@@ -841,12 +841,12 @@ def main():
                 if running_screen != 3:
                     continue
                 eraser.set_color("red") if CellStorage.erase_mode else eraser.set_color("black")
-                screen.blit(to_s1_text.text, to_s1_text.rect)
+                to_s1_text.blit()
                 save.dis_light()
                 s3_info.set_color("red")
                 blit_text(screen, s3_info_text, (20, 15), pygame.font.SysFont('Courier New', 24))
                 for btn in buttons3:
-                    btn.blit(screen)
+                    btn.blit()
                 pygame.display.flip()
 
         pygame.quit()

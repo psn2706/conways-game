@@ -1,3 +1,6 @@
+import pygame.display
+
+
 class Rect:
     def __init__(self, rect=(0, 0, 0, 0)):
         self.rect = rect
@@ -52,9 +55,9 @@ class Button(Rect):
     def collide_point(self, x, y):
         return not self.hidden and super().collide_point(x, y)
 
-    def blit(self, screen):
+    def blit(self):
         if not self.hidden:
-            screen.blit(self.image, self.rect)
+            pygame.display.get_surface().blit(self.image, self.rect)
 
     def action(self, as_btn=True):
         if (self.active and not self.hidden) or not as_btn:
@@ -67,6 +70,9 @@ class Text(Rect):
         super().__init__()
         self.text = render_text
         self.rect = list(render_text.get_rect())
+
+    def blit(self):
+        pygame.display.get_surface().blit(self.text, self.rect)
 
 
 def blit_text(surface, text, pos, font, color='black'):
